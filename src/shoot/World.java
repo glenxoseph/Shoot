@@ -1,7 +1,9 @@
 package shoot;
+import javax.imageio.ImageIO;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import java.awt.Color;
+import java.awt.Font;
 import java.awt.Graphics;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -10,12 +12,26 @@ import java.util.Arrays;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
-import java.awt.event.KeyListener;
 
 /** entire game world */
 public class World extends JPanel {
+	public static BufferedImage start;
+	public static BufferedImage pause;
+	public static BufferedImage gameover;
+	static {
+		start = loadImage("start.png");
+		pause = loadImage("pause.png");
+		gameover = loadImage("gameover.png");
+	}
+	
 	public static final int WIDTH = 640;  // width of window
 	public static final int HEIGHT = 1136; // height of window
+	
+	private int state = START;
+	public static final int START = 0;
+	public static final int RUNNING = 1;
+	public static final int PAUSE = 2;
+	public static final int GAME_OVER = 3;
 	
 	private Sky sky = new Sky();    // sky object
 	private Hero hero = new Hero(); // hero object
@@ -105,6 +121,9 @@ public class World extends JPanel {
 			FlyingObject f = enemies[i]; // get every enemy
 			if (hero.isLife() && f.isLife() && f.hit(hero)) {
 				hero.minusLife();
+				if (hero.getLife() < 0) {
+					state = GAME_OVER;
+				}
 				f.goDead();
 			}
 		}
@@ -146,10 +165,47 @@ public class World extends JPanel {
 		// lister object
 		MouseAdapter l = new MouseAdapter(){
 			/** overwrite mouseMoved() */
-			public void mouseMoved(MouseEvent e){
-				int x = e.getX(); // get x coordinate of mouse
-				int y = e.getY(); // get y coordinate of mouse
-				hero.moveTo(x, y); // hero moves with mouse
+			@Override
+			public void mouseMoved(MouseEvent e) {
+				//只有在RUNNING状态下英雄机才跟随鼠标移动
+				if(state == RUNNING){
+					//step3: 获得鼠标新位置
+					int x = e.getX();
+					int y = e.getY();
+					//step4: 将鼠标位置传给英雄机的move方法
+					hero.moveTo(x, y);
+				}
+			}
+
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				if(state == START || state == PAUSE){ //START或者PAUSE状态，单击才会改改为RUNNING状态
+					state = RUNNING;
+				}else if(state == RUNNING){ //游戏点击暂停
+					state = PAUSE;
+				}else if(state == GAME_OVER){ //游戏结束后单击，游戏初始化
+					state = START;
+					//从GAME_OVER到START，要重新初始化游戏数据
+					enemies = new FlyingObject[0];
+					bullets = new Bullet[0];
+					hero = new Hero();
+				}
+			}
+
+
+			@Override
+			public void mouseExited(MouseEvent e) {
+				if(state == RUNNING){
+					//仅在处于RUNNING状态下，鼠标移出才暂停
+					state = PAUSE;
+				}
+			}
+			
+			@Override
+			public void mouseEntered(MouseEvent e) {
+				if(state == PAUSE){
+					state = RUNNING;
+				}
 			}
 		};
 		this.addMouseListener(l); // deal with event of mouse operation
@@ -181,8 +237,28 @@ public class World extends JPanel {
 			bullets[i].paintObject(g); // paint bullets
 		}
 		g.setColor(Color.WHITE);
+		Font font = new Font(Font.SANS_SERIF,Font.BOLD,14);
+		g.setFont(font);
 		g.drawString("SCORE: " + score, 10, 25); // paint score
 		g.drawString("LIFE: " + hero.getLife(), 10, 45); // paint lives
+		if(state == START){
+			g.drawImage(start, 0, 0, null);
+		}else if(state == PAUSE){
+			g.drawImage(pause, 0, 0, null);
+		}else if(state == GAME_OVER){
+			g.drawImage(gameover, 0, 0, null);
+		}
+	}
+	
+	/** load image */
+	public static BufferedImage loadImage(String fileName) {
+		try {
+			BufferedImage img = ImageIO.read(World.class.getResource(fileName)); // load image from the same package
+			return img;
+		}catch(Exception e) {
+			e.printStackTrace();
+			throw new RuntimeException();
+		}
 	}
 	
 	public static void main(String[] args) {
