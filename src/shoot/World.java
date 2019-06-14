@@ -167,25 +167,25 @@ public class World extends JPanel {
 			/** overwrite mouseMoved() */
 			@Override
 			public void mouseMoved(MouseEvent e) {
-				//只有在RUNNING状态下英雄机才跟随鼠标移动
+				// hero moves with mouse only when RUNNING
 				if(state == RUNNING){
-					//step3: 获得鼠标新位置
+					// get new position of mouse
 					int x = e.getX();
 					int y = e.getY();
-					//step4: 将鼠标位置传给英雄机的move方法
+					// send the position of mouse to hero
 					hero.moveTo(x, y);
 				}
 			}
 
 			@Override
 			public void mouseClicked(MouseEvent e) {
-				if(state == START || state == PAUSE){ //START或者PAUSE状态，单击才会改改为RUNNING状态
+				if(state == START || state == PAUSE){ // START or PAUSE, click to RUNNING
 					state = RUNNING;
-				}else if(state == RUNNING){ //游戏点击暂停
+				}else if(state == RUNNING){ // RUNNING, click to PAUSE
 					state = PAUSE;
-				}else if(state == GAME_OVER){ //游戏结束后单击，游戏初始化
+				}else if(state == GAME_OVER){ // GAME_OVER, click to START 
 					state = START;
-					//从GAME_OVER到START，要重新初始化游戏数据
+					// from GAME_OVER to START，initialize data again
 					enemies = new FlyingObject[0];
 					bullets = new Bullet[0];
 					hero = new Hero();
@@ -196,7 +196,7 @@ public class World extends JPanel {
 			@Override
 			public void mouseExited(MouseEvent e) {
 				if(state == RUNNING){
-					//仅在处于RUNNING状态下，鼠标移出才暂停
+					// only if RUNNING, PAUSE when mouse off bound
 					state = PAUSE;
 				}
 			}
