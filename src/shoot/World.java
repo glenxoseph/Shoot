@@ -34,7 +34,7 @@ public class World extends JPanel {
 	static Music gameOverMusic = new Music(gameOverMusicName);
 	
 	public static final int WIDTH = 640;  // width of window
-	public static final int HEIGHT = 1136; // height of window
+	public static final int HEIGHT = 960; // height of window
 	
 	private int state = START;
 	public static final int START = 0;
@@ -205,6 +205,7 @@ public class World extends JPanel {
 					playingMusic.stop();
 				} else if(state == GAME_OVER){ // GAME_OVER, click to START 
 					state = START;
+					startMusic.play();
 					// from GAME_OVER to START，initialize data again
 					enemies = new FlyingObject[0];
 					bullets = new Bullet[0];
