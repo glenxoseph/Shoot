@@ -23,6 +23,15 @@ public class World extends JPanel {
 		pause = loadImage("pause.png");
 		gameover = loadImage("gameover.png");
 	}
+	public static String startMusicName = "start";
+	public static String playingMusicName = "shoot!";
+	public static String gameOverMusicName = "gameover";
+	public static String hitEnemyEffect = "hit1";
+	public static String hitStarEffect = "hit2";
+	
+	static Music startMusic = new Music(startMusicName);
+	static Music playingMusic = new Music(playingMusicName);
+	static Music gameOverMusic = new Music(gameOverMusicName);
 	
 	public static final int WIDTH = 640;  // width of window
 	public static final int HEIGHT = 1136; // height of window
@@ -66,7 +75,7 @@ public class World extends JPanel {
 	/** bullets enter (emitted by hero) */
 	public void shootAction() { // run every 10 ms
 		shootIndex++; // add one every 10 ms
-		if(shootIndex % 30 == 0) { // run every 300 ms
+		if(shootIndex % 50 == 0) { // run every 500 ms
 			Bullet[] bs = hero.shoot(); // get bullet object
 			bullets = Arrays.copyOf(bullets, bullets.length + bs.length); 
 			// provide array with a larger space according to the number of elements of bullets
@@ -121,8 +130,11 @@ public class World extends JPanel {
 			FlyingObject f = enemies[i]; // get every enemy
 			if (hero.isLife() && f.isLife() && f.hit(hero)) {
 				hero.minusLife();
-				if (hero.getLife() < 0) {
+				SoundEffects.playMusic(hitEnemyEffect);
+				if (hero.getLife() < 1) {
 					state = GAME_OVER;
+					playingMusic.stop();
+					gameOverMusic.play();
 				}
 				f.goDead();
 			}
@@ -142,10 +154,12 @@ public class World extends JPanel {
 					if(f instanceof Enemy){ // if enemy scores
 						Enemy e = (Enemy)f; // type casting to score interface
 						score += e.getScore(); // player scores
-					}
+						SoundEffects.playMusic(hitEnemyEffect);
+ 					}
 					if(f instanceof Award){ // if award
 						Award a = (Award)f; // type casting to award interface
 						int type = a.getAwardType(); // get award type
+						SoundEffects.playMusic(hitStarEffect);
 						switch(type){ // get different award based on different award types
 						case Award.DOUBLE_FIRE:   // if award type is fire value
 							hero.addDoubleFire(); // hero adds fire
@@ -179,11 +193,17 @@ public class World extends JPanel {
 
 			@Override
 			public void mouseClicked(MouseEvent e) {
-				if(state == START || state == PAUSE){ // START or PAUSE, click to RUNNING
+				if(state == START){ // START, click to RUNNING
 					state = RUNNING;
-				}else if(state == RUNNING){ // RUNNING, click to PAUSE
+					startMusic.stop();
+					playingMusic.loop();
+				} else if(state == PAUSE){ // PAUSE, click to RUNNING
+					state = RUNNING;
+					playingMusic.resume();
+				} else if(state == RUNNING){ // RUNNING, click to PAUSE
 					state = PAUSE;
-				}else if(state == GAME_OVER){ // GAME_OVER, click to START 
+					playingMusic.stop();
+				} else if(state == GAME_OVER){ // GAME_OVER, click to START 
 					state = START;
 					// from GAME_OVER to START，initialize data again
 					enemies = new FlyingObject[0];
@@ -198,6 +218,7 @@ public class World extends JPanel {
 				if(state == RUNNING){
 					// only if RUNNING, PAUSE when mouse off bound
 					state = PAUSE;
+					playingMusic.stop();
 				}
 			}
 			
@@ -205,6 +226,7 @@ public class World extends JPanel {
 			public void mouseEntered(MouseEvent e) {
 				if(state == PAUSE){
 					state = RUNNING;
+					playingMusic.resume();
 				}
 			}
 		};
@@ -215,12 +237,14 @@ public class World extends JPanel {
 		int interval = 10; // period, unit ms
 		timer.schedule(new TimerTask() {
 			public void run() { // what timer does, run every 10 ms
-				enterAction(); // enemies (airplanes, bigAirplanes, and stars) enter
-				shootAction(); // bullets enter (omitted by hero)
-				stepAction();  // flyingObjects move
-				outOfBoundsAction(); // delete flyingObjects off the bound (enemies and bullets)
-				heroHitEnemiesAction();
-				bulletBangAction();  // collision of bullets and enemies
+				if (state == RUNNING) {
+					enterAction(); // enemies (airplanes, bigAirplanes, and stars) enter
+					shootAction(); // bullets enter (omitted by hero)
+					stepAction();  // flyingObjects move
+					outOfBoundsAction(); // delete flyingObjects off the bound (enemies and bullets)
+					heroHitEnemiesAction();
+					bulletBangAction();  // collision of bullets and enemies
+				}
 				repaint();     // reuse paint() method
 			}
 		},interval,interval); // schedule
@@ -262,6 +286,7 @@ public class World extends JPanel {
 	}
 	
 	public static void main(String[] args) {
+		startMusic.play();
 		JFrame frame = new JFrame();
 		World world = new World();
 		frame.add(world);
